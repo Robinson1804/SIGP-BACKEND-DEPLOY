@@ -78,7 +78,12 @@
       "Bash(docker-compose start:*)",
       "Bash(docker-compose rm:*)",
       "Bash(gh auth status:*)",
-      "Bash(git init:*)"
+      "Bash(git init:*)",
+      "Bash(winget install:*)",
+      "Bash(choco install:*)",
+      "Bash(\"C:\\\\Program Files\\\\GitHub CLI\\\\gh.exe\" auth status)",
+      "Bash(\"C:\\\\Program Files\\\\GitHub CLI\\\\gh.exe\" auth login --web -h github.com)",
+      "Bash(\"C:\\\\Program Files\\\\GitHub CLI\\\\gh.exe\" repo create SIGP-BACKEND-DEPLOY --public --description \"Sistema Integral de Gestión de Proyectos - Backend API \\(NestJS, PostgreSQL, Redis, MinIO\\)\" --source \"E:\\\\Test\\\\sigp-backend\" --remote origin --push)"
     ]
   },
   "hooks": {

@@ -33,19 +33,22 @@ import { StorageModule } from './modules/storage/storage.module';
     // TypeORM
     TypeOrmModule.forRootAsync({
       inject: [ConfigService],
-      useFactory: (config: ConfigService) => ({
-        type: 'postgres',
-        host: config.get('database.host'),
-        port: config.get('database.port'),
-        username: config.get('database.username'),
-        password: config.get('database.password'),
-        database: config.get('database.database'),
-        autoLoadEntities: true,
-        synchronize: config.get('database.synchronize'),
-        logging: config.get('database.logging'),
-        ssl: config.get('database.ssl'),
-        entities: [__dirname + '/**/*.entity{.ts,.js}'],
-      }),
+      useFactory: (config: ConfigService) => {
+        const sslEnabled = config.get('database.ssl');
+        return {
+          type: 'postgres',
+          host: config.get('database.host'),
+          port: config.get('database.port'),
+          username: config.get('database.username'),
+          password: config.get('database.password'),
+          database: config.get('database.database'),
+          autoLoadEntities: true,
+          synchronize: config.get('database.synchronize'),
+          logging: config.get('database.logging'),
+          ssl: sslEnabled ? { rejectUnauthorized: false } : false,
+          entities: [__dirname + '/**/*.entity{.ts,.js}'],
+        };
+      },
     }),
 
     // Schedule (for cron jobs)
