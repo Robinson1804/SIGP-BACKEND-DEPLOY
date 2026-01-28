@@ -8,5 +8,8 @@ export default registerAs('database', () => ({
   database: process.env.DATABASE_NAME || 'sigp_db',
   synchronize: process.env.DATABASE_SYNCHRONIZE === 'true' || false,
   logging: process.env.DATABASE_LOGGING === 'true' || false,
-  ssl: process.env.DATABASE_SSL === 'true' || false,
+  // For Railway and other cloud providers with self-signed certificates
+  ssl: process.env.DATABASE_SSL === 'true'
+    ? { rejectUnauthorized: false }
+    : false,
 }));
