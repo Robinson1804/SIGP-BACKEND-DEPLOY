@@ -33,8 +33,36 @@ import { StorageModule } from './modules/storage/storage.module';
     // TypeORM
     TypeOrmModule.forRootAsync({
       inject: [ConfigService],
-      useFactory: (config: ConfigService) => {
+      useFactory: async (config: ConfigService) => {
         const sslEnabled = config.get('database.ssl');
+        const sslConfig = sslEnabled ? { rejectUnauthorized: false } : false;
+
+        // Create schemas if they don't exist (for Railway and fresh databases)
+        if (config.get('database.synchronize')) {
+          const { Client } = await import('pg');
+          const client = new Client({
+            host: config.get('database.host'),
+            port: config.get('database.port'),
+            user: config.get('database.username'),
+            password: config.get('database.password'),
+            database: config.get('database.database'),
+            ssl: sslConfig,
+          });
+
+          try {
+            await client.connect();
+            const schemas = ['planning', 'poi', 'agile', 'rrhh', 'notificaciones', 'storage'];
+            for (const schema of schemas) {
+              await client.query(`CREATE SCHEMA IF NOT EXISTS ${schema}`);
+            }
+            console.log('Database schemas created/verified successfully');
+          } catch (error) {
+            console.error('Error creating schemas:', error.message);
+          } finally {
+            await client.end();
+          }
+        }
+
         return {
           type: 'postgres',
           host: config.get('database.host'),
@@ -45,7 +73,7 @@ import { StorageModule } from './modules/storage/storage.module';
           autoLoadEntities: true,
           synchronize: config.get('database.synchronize'),
           logging: config.get('database.logging'),
-          ssl: sslEnabled ? { rejectUnauthorized: false } : false,
+          ssl: sslConfig,
           entities: [__dirname + '/**/*.entity{.ts,.js}'],
         };
       },
