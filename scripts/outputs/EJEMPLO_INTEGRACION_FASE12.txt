@@ -1,0 +1,309 @@
+===========================================
+EJEMPLO DE INTEGRACION - FASE 12
+===========================================
+
+Este archivo muestra como quedaria el script test-agile-exhaustivo.ps1
+despues de integrar la Fase 12.
+
+===========================================
+PASO 1: ACTUALIZAR HASHTABLE DE IDS
+===========================================
+
+ANTES (lineas 26-74):
+-------------------------------------------
+$ids = @{
+    aeId = $null
+    proyectoId = $null
+    ...
+    dailyId = $null
+    dailyId2 = $null
+    dailyKanbanId = $null
+    participanteId = $null        # <- De Fase 11 (tests basicos)
+    participanteId2 = $null       # <- De Fase 11 (tests basicos)
+    comentarioHuId = $null
+    ...
+}
+-------------------------------------------
+
+DESPUES (agregar 3 nuevas variables):
+-------------------------------------------
+$ids = @{
+    aeId = $null
+    proyectoId = $null
+    ...
+    dailyId = $null
+    dailyId2 = $null
+    dailyKanbanId = $null
+    participanteId = $null        # <- De Fase 11 (tests basicos)
+    participanteId2 = $null       # <- De Fase 11 (tests basicos)
+    participanteAdmin = $null     # <- NUEVO (Fase 12)
+    participantePmo = $null       # <- NUEVO (Fase 12)
+    participanteDev = $null       # <- NUEVO (Fase 12)
+    comentarioHuId = $null
+    ...
+}
+-------------------------------------------
+
+===========================================
+PASO 2: INSERTAR FASE 12
+===========================================
+
+UBICACION: Antes de la linea "# RESUMEN FINAL" (aprox. linea 676)
+
+CONTEXTO ANTES:
+-------------------------------------------
+# ... Fase 11 ...
+Test-Api -Name "11.44 - Verificar orden cronologico en sprint" -Method GET -Endpoint "/sprints/$($ids.sprintId2)/daily-meetings" -Token $adminToken -ExpectedStatus 200
+
+Test-Api -Name "11.45 - Verificar resumen incluye participantes" -Method GET -Endpoint "/daily-meetings/$($ids.dailyId)/resumen" -Token $adminToken -ExpectedStatus 200
+
+# RESUMEN FINAL                  # <- INSERTAR FASE 12 JUSTO AQUI
+Write-Host "`n=======================================" -ForegroundColor Cyan
+...
+-------------------------------------------
+
+CONTEXTO DESPUES:
+-------------------------------------------
+# ... Fase 11 ...
+Test-Api -Name "11.44 - Verificar orden cronologico en sprint" -Method GET -Endpoint "/sprints/$($ids.sprintId2)/daily-meetings" -Token $adminToken -ExpectedStatus 200
+
+Test-Api -Name "11.45 - Verificar resumen incluye participantes" -Method GET -Endpoint "/daily-meetings/$($ids.dailyId)/resumen" -Token $adminToken -ExpectedStatus 200
+
+# ========================================
+# FASE 12: PARTICIPANTES DE DAILY MEETINGS (EXHAUSTIVO)
+# ========================================
+Write-Host "`n=== FASE 12: PARTICIPANTES DAILY (EXHAUSTIVO) ===" -ForegroundColor Magenta
+
+# 12.1 Agregar participantes con diferentes configuraciones
+Test-Api -Name "12.1 - Agregar participante basico a daily SCRUM" `
+  -Method POST `
+  -Endpoint "/daily-meetings/$($ids.dailyId)/participantes" `
+  -Token $adminToken `
+  -Body @{usuarioId=13} `
+  -ExpectedStatus 200 `
+  -SaveIdAs "participanteAdmin"
+
+Test-Api -Name "12.2 - Agregar participante con que hice/hare completo" `
+  -Method POST `
+  -Endpoint "/daily-meetings/$($ids.dailyId)/participantes" `
+  -Token $adminToken `
+  -Body @{
+    usuarioId=14;
+    queHiceAyer="Complete la implementacion del modulo de autenticacion...";
+    queHareHoy="Trabajare en el sistema de perfiles de usuario..."
+  } `
+  -ExpectedStatus 200 `
+  -SaveIdAs "participantePmo"
+
+# ... (resto de los 45 tests) ...
+
+Test-Api -Name "12.45 - Verificar conteo de participantes en resumen" `
+  -Method GET `
+  -Endpoint "/daily-meetings/$($ids.dailyId)/resumen" `
+  -Token $pmoToken `
+  -ExpectedStatus 200
+
+# RESUMEN FINAL
+Write-Host "`n=======================================" -ForegroundColor Cyan
+...
+-------------------------------------------
+
+===========================================
+PASO 3: RESULTADO ESPERADO AL EJECUTAR
+===========================================
+
+CONSOLA - FASE 12:
+-------------------------------------------
+=== FASE 12: PARTICIPANTES DAILY (EXHAUSTIVO) ===
+[PASS] 12.1 - Agregar participante basico a daily SCRUM
+  Saved ID: participanteAdmin = 123
+[PASS] 12.2 - Agregar participante con que hice/hare completo
+  Saved ID: participantePmo = 124
+[PASS] 12.3 - Agregar participante con impedimentos
+  Saved ID: participanteDev = 125
+[PASS] 12.4 - Agregar participante a otra daily Kanban
+[PASS] 12.5 - Agregar participante solo con impedimentos
+[EXPECTED FAIL] 12.6 - Rechazar participante duplicado (mismo usuario)
+[EXPECTED FAIL] 12.7 - Rechazar agregar sin permisos (dev)
+[EXPECTED FAIL] 12.8 - Rechazar sin usuarioId valido
+[EXPECTED FAIL] 12.9 - Rechazar con usuarioId inexistente
+[EXPECTED FAIL] 12.10 - Rechazar agregar a daily inexistente
+[PASS] 12.11 - Actualizar solo que hice ayer
+[PASS] 12.12 - Actualizar solo que hare hoy
+[PASS] 12.13 - Actualizar solo impedimentos
+[PASS] 12.14 - Limpiar impedimentos (vacio)
+[PASS] 12.15 - Marcar asistencia como presente (true)
+[PASS] 12.16 - Marcar asistencia como ausente (false)
+[PASS] 12.17 - Cambiar asistencia de false a true
+[PASS] 12.18 - Actualizar todos los campos juntos
+[PASS] 12.19 - Actualizar que hice y que hare juntos
+[PASS] 12.20 - Actualizar que hare e impedimentos
+[PASS] 12.21 - Admin puede actualizar cualquier participante
+[PASS] 12.22 - PMO puede actualizar cualquier participante
+[PASS] 12.23 - Scrum Master puede actualizar cualquier participante
+[PASS] 12.24 - Coordinador puede actualizar cualquier participante
+[EXPECTED FAIL] 12.25 - Dev NO puede actualizar datos de otros (Admin)
+[EXPECTED FAIL] 12.26 - Dev NO puede actualizar datos de otros (PMO)
+[PASS] 12.27 - Obtener daily con participantes actualizados
+[PASS] 12.28 - Verificar participantes en resumen detallado
+[PASS] 12.29 - Obtener daily Kanban con participantes
+[PASS] 12.30 - Verificar datos completos de participantes
+[PASS] 12.31 - Eliminar participante por Admin
+[PASS] 12.32 - Verificar participante eliminado no aparece
+[EXPECTED FAIL] 12.33 - Rechazar eliminar sin permisos (dev)
+[PASS] 12.34 - Crear participante temporal para test PMO
+[PASS] 12.35 - PMO puede eliminar participante
+[PASS] 12.36 - Crear participante temporal para test Scrum Master
+[PASS] 12.37 - Scrum Master puede eliminar participante
+[EXPECTED FAIL] 12.38 - Rechazar actualizar participante inexistente
+[EXPECTED FAIL] 12.39 - Rechazar eliminar participante inexistente
+[PASS] 12.40 - Actualizar con body vacio debe ser exitoso
+[PASS] 12.41 - Actualizar con texto largo en que hice
+[PASS] 12.42 - Actualizar con texto largo en impedimentos
+[PASS] 12.43 - Verificar estado final de participantes en daily SCRUM
+[PASS] 12.44 - Verificar estado final de participantes en daily Kanban
+[PASS] 12.45 - Verificar conteo de participantes en resumen
+-------------------------------------------
+
+RESUMEN FINAL:
+-------------------------------------------
+=======================================
+RESUMEN - MODULO AGILE
+=======================================
+
+Estadisticas:
+  Total:              XXX  (se incrementa en 45)
+  Pasadas:            XXX  (se incrementa en ~35)
+  Fallidas:           0    (debe ser 0)
+  Fallos esperados:   XXX  (se incrementa en ~10)
+  Fallos inesperados: 0    (DEBE SER 0)
+  Duracion:           XX.XX segundos
+
+  Tasa de exito: XX.XX%
+
+IDs Guardados:
+  aeId = 1
+  proyectoId = 2
+  ...
+  dailyId = 20
+  dailyKanbanId = 21
+  participanteId = 22        (de Fase 11)
+  participanteId2 = 23       (de Fase 11)
+  participanteAdmin = 123    (de Fase 12)
+  participantePmo = 124      (de Fase 12)
+  participanteDev = 125      (de Fase 12)
+  ...
+
+Resultados guardados en: test-agile-results.json
+-------------------------------------------
+
+===========================================
+ARCHIVO JSON DE RESULTADOS
+===========================================
+
+test-agile-results.json (extracto):
+-------------------------------------------
+{
+  "Summary": {
+    "Total": 200,              // Ejemplo (depende de fases anteriores)
+    "Passed": 175,
+    "Failed": 0,
+    "ExpectedFail": 25,
+    "UnexpectedFail": 0,       // <- DEBE SER 0
+    "StartTime": "2025-12-15T10:00:00",
+    "EndTime": "2025-12-15T10:02:30",
+    "Duration": "150.5s",
+    "SuccessRate": "87.5%"
+  },
+  "IDs": {
+    "aeId": 1,
+    "proyectoId": 2,
+    ...
+    "dailyId": 20,
+    "dailyKanbanId": 21,
+    "participanteId": 22,
+    "participanteId2": 23,
+    "participanteAdmin": 123,   // <- NUEVO
+    "participantePmo": 124,     // <- NUEVO
+    "participanteDev": 125      // <- NUEVO
+  }
+}
+-------------------------------------------
+
+===========================================
+COMANDOS DE EJECUCION
+===========================================
+
+1. VERIFICAR SINTAXIS:
+-------------------------------------------
+powershell -NoExit -Command "Get-Content test-agile-exhaustivo.ps1 | Out-Null; Write-Host 'Sintaxis OK' -ForegroundColor Green"
+-------------------------------------------
+
+2. EJECUTAR SCRIPT COMPLETO:
+-------------------------------------------
+.\test-agile-exhaustivo.ps1
+-------------------------------------------
+
+3. EJECUTAR SOLO DESDE POWERSHELL:
+-------------------------------------------
+powershell -File test-agile-exhaustivo.ps1
+-------------------------------------------
+
+4. VER RESULTADOS JSON:
+-------------------------------------------
+Get-Content test-agile-results.json | ConvertFrom-Json | Select-Object -ExpandProperty Summary | Format-List
+-------------------------------------------
+
+5. CONTAR TESTS POR FASE:
+-------------------------------------------
+Select-String -Path test-agile-exhaustivo.ps1 -Pattern "Test-Api -Name" | Measure-Object
+-------------------------------------------
+
+===========================================
+VALIDACION POST-INTEGRACION
+===========================================
+
+CHECKLIST:
+[ ] Sintaxis de PowerShell correcta (sin errores al cargar)
+[ ] Variables participanteAdmin, participantePmo, participanteDev agregadas al hashtable
+[ ] Fase 12 insertada antes de RESUMEN FINAL
+[ ] Script ejecuta sin errores
+[ ] Total de tests incrementa en 45
+[ ] Fallos inesperados = 0
+[ ] JSON de resultados se genera correctamente
+[ ] IDs de participantes se guardan en el hashtable
+[ ] Participantes se consultan correctamente en base de datos
+
+===========================================
+TROUBLESHOOTING
+===========================================
+
+PROBLEMA: Error de sintaxis al ejecutar
+SOLUCION: Verificar que no haya caracteres especiales mal copiados.
+          Usar encoding UTF-8 al guardar el archivo.
+
+PROBLEMA: Variables $ids.participanteAdmin no definidas
+SOLUCION: Asegurar que las 3 nuevas variables esten en el hashtable inicial.
+
+PROBLEMA: Tests fallan con 401 Unauthorized
+SOLUCION: Verificar que los tokens (adminToken, pmoToken, devToken) sean validos.
+          Regenerar tokens si expiraron.
+
+PROBLEMA: Tests fallan con 404 Not Found en daily meetings
+SOLUCION: Asegurar que Fase 11 se ejecuto correctamente.
+          Verificar que $ids.dailyId y $ids.dailyKanbanId tengan valores.
+
+PROBLEMA: Fallos inesperados > 0
+SOLUCION: Revisar la respuesta del API para identificar el problema.
+          Verificar que el service implemente la logica esperada.
+          Consultar FASE12_PARTICIPANTES_REPORT.md para detalles.
+
+===========================================
+FIN DEL EJEMPLO
+===========================================
+
+Para mas detalles, consultar:
+- FASE12_PARTICIPANTES_REPORT.md (reporte tecnico)
+- INTEGRACION_FASE12.md (guia paso a paso)
+- FASE12_CHECKLIST.md (checklist de validacion)
+- FASE12_RESUMEN_EJECUTIVO.md (resumen ejecutivo)

@@ -1,0 +1,41 @@
+# Dependencies
+node_modules
+
+# Build output
+dist
+
+# Git
+.git
+.gitignore
+
+# Environment files
+.env
+.env.local
+.env.*.local
+
+# IDE
+.vscode
+.idea
+
+# Documentation
+*.md
+docs
+
+# Coverage
+coverage
+
+# Claude
+.claude
+
+# Logs
+*.log
+npm-debug.log*
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Test files
+test
+*.spec.ts
+*.e2e-spec.ts

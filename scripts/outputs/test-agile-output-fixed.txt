@@ -1,0 +1,222 @@
+
+=======================================
+PRUEBAS EXHAUSTIVAS - MODULO AGILE
+Cobertura: 12 entidades, 80+ endpoints
+=======================================
+
+=== FASE 0: SETUP POI ===
+[PASS] 0.1 - Crear Accion Estrategica
+  Saved ID: aeId = 16
+
+[PASS] 0.2 - Crear Proyecto POI principal
+  Saved ID: proyectoId = 32
+[PASS] 0.3 - Crear segundo Proyecto POI
+  Saved ID: proyectoId2 = 33
+[PASS] 0.4 - Crear Actividad POI 1
+  Saved ID: actividadId = 19
+[PASS] 0.5 - Crear Actividad POI 2
+  Saved ID: actividadId2 = 20
+[PASS] 0.6 - Crear Requerimiento Funcional
+  Saved ID: requerimientoId = 14
+[PASS] 0.7 - Crear Requerimiento No Funcional
+  Saved ID: requerimientoId2 = 15
+[PASS] 0.8 - Verificar setup POI completo
+
+=== FASE 1: A%PICAS ===
+[PASS] 1.1 - Crear Acpica ALTA prioridad
+  Saved ID: epicaId = 10
+[PASS] 1.2 - Crear Acpica MEDIA prioridad
+  Saved ID: epicaId2 = 11
+[PASS] 1.3 - Crear Acpica BAJA prioridad
+  Saved ID: epicaId3 = 12
+[EXPECTED FAIL] 1.4 - Rechazar sin proyectoId
+[PASS] 1.5 - Listar todas las Acpicas
+[PASS] 1.6 - Obtener Acpica por ID
+[PASS] 1.7 - Obtener estadA-sticas de Acpica
+[PASS] 1.8 - Actualizar nombre y descripciA3n
+success data                                                                                                           
+------- ----                                                                                                           
+   True @{id=16; oegdId=1; codigo=AE-AGILE-234859; nombre=AE para Pruebas Agile; descripcion=AE de prueba; indicador...
+   True @{id=32; codigo=PROY-AGILE-234859-1; nombre=Proyecto Agile Test 1; descripcion=; tipo=Proyecto; clasificacio...
+   True @{id=33; codigo=PROY-AGILE-234859-2; nombre=Proyecto Agile Test 2; descripcion=; tipo=Proyecto; clasificacio...
+   True @{id=19; codigo=ACT-AGILE-234859-1; nombre=Actividad Kanban Test 1; descripcion=; tipo=Actividad; clasificac...
+   True @{id=20; codigo=ACT-AGILE-234859-2; nombre=Actividad Kanban Test 2; descripcion=; tipo=Actividad; clasificac...
+   True @{id=14; proyectoId=32; codigo=REQ-AGILE-234859-1; nombre=Requerimiento Funcional Test; descripcion=; tipo=F...
+   True @{id=15; proyectoId=32; codigo=REQ-AGILE-234859-2; nombre=Requerimiento No Funcional Test; descripcion=; tip...
+   True @{id=32; codigo=PROY-AGILE-234859-1; nombre=Proyecto Agile Test 1; descripcion=; tipo=Proyecto; clasificacio...
+   True @{id=10; proyectoId=32; codigo=EPIC-234859-1; nombre=??pica de Autenticaci¢n; descripcion=Implementar sistem...
+   True @{id=11; proyectoId=32; codigo=EPIC-234859-2; nombre=??pica de Reportes; descripcion=Sistema de generaci¢n d...
+   True @{id=12; proyectoId=32; codigo=EPIC-234859-3; nombre=??pica de Notificaciones; descripcion=; color=#6366F1; ...
+   True {@{id=10; proyectoId=32; codigo=EPIC-234859-1; nombre=??pica de Autenticaci¢n; descripcion=Implementar siste...
+   True @{id=10; proyectoId=32; codigo=EPIC-234859-1; nombre=??pica de Autenticaci¢n; descripcion=Implementar sistem...
+   True @{epicaId=10; totalHUs=0; husCompletadas=0; husEnProgreso=0; husPendientes=0; totalStoryPoints=0; storyPoint...
+   True @{id=10; proyectoId=32; codigo=EPIC-234859-1; nombre=??pica Autenticaci¢n Actualizada; descripcion=Sistema c...
+[PASS] 1.9 - Actualizar prioridad
+   True @{id=11; proyectoId=32; codigo=EPIC-234859-2; nombre=??pica de Reportes; descripcion=Sistema de generaci¢n d...
+[EXPECTED FAIL] 1.10 - Rechazar actualizaciA3n sin permisos
+
+=== FASE 2: SPRINTS ===
+[PASS] 2.1 - Crear sprint Planificado
+  Saved ID: sprintId = 21
+   True @{id=21; proyectoId=32; nombre=Sprint 1 - Autenticaci¢n; sprintGoal=Implementar login y registro; fechaInici...
+[PASS] 2.2 - Crear segundo sprint
+  Saved ID: sprintId2 = 22
+   True @{id=22; proyectoId=32; nombre=Sprint 2 - Perfiles; sprintGoal=CRUD de perfiles de usuario; fechaInicio=2025...
+[PASS] 2.3 - Crear tercer sprint
+  Saved ID: sprintId3 = 23
+   True @{id=23; proyectoId=32; nombre=Sprint 3 - Reportes; sprintGoal=Dashboard y reportes b sicos; fechaInicio=202...
+[EXPECTED FAIL] 2.4 - Rechazar sin proyectoId
+[PASS] 2.5 - Listar todos los sprints
+   True {@{id=23; proyectoId=32; nombre=Sprint 3 - Reportes; sprintGoal=Dashboard y reportes b sicos; fechaInicio=20...
+[PASS] 2.6 - Obtener sprint por ID
+   True @{id=21; proyectoId=32; nombre=Sprint 1 - Autenticaci¢n; sprintGoal=Implementar login y registro; fechaInici...
+[PASS] 2.7 - Obtener burndown chart
+   True @{sprintId=21; totalStoryPoints=0; dias=System.Object[]}                                                       
+[PASS] 2.8 - Obtener mActricas del sprint
+   True @{sprintId=21; nombre=Sprint 1 - Autenticaci¢n; diasTotales=14; diasTranscurridos=335; diasRestantes=0; tota...
+[PASS] 2.9 - Actualizar nombre y objetivo
+   True @{id=21; proyectoId=32; nombre=Sprint 1 - Auth Actualizado; sprintGoal=Implementar login, registro y perfile...
+[PASS] 2.10 - Iniciar sprint
+   True @{id=21; proyectoId=32; nombre=Sprint 1 - Auth Actualizado; sprintGoal=Implementar login, registro y perfile...
+[PASS] 2.11 - Cerrar sprint
+   True @{id=21; proyectoId=32; nombre=Sprint 1 - Auth Actualizado; sprintGoal=Implementar login, registro y perfile...
+[EXPECTED FAIL] 2.12 - Rechazar iniciar sin permisos
+
+=== FASE 3: HISTORIAS DE USUARIO ===
+[PASS] 3.1 - Crear HU con criterios de aceptaciA3n
+  Saved ID: huId = 16
+   True @{id=16; proyectoId=32; epicaId=; sprintId=; codigo=HU-234859-1; titulo=Implementar login de usuarios; rol=U...
+[PASS] 3.2 - Crear HU asignada a Acpica
+  Saved ID: huId2 = 17
+   True @{id=17; proyectoId=32; epicaId=10; sprintId=; codigo=HU-234859-2; titulo=Implementar registro de usuarios; ...
+[PASS] 3.3 - Crear HU asignada a sprint
+  Saved ID: huId3 = 18
+   True @{id=18; proyectoId=32; epicaId=; sprintId=22; codigo=HU-234859-3; titulo=Crear perfil de usuario; rol=; qui...
+[PASS] 3.4 - Crear HU prioridad MUST
+  Saved ID: huId4 = 19
+   True @{id=19; proyectoId=32; epicaId=; sprintId=; codigo=HU-234859-4; titulo=Recuperar contrase¤a; rol=; quiero=;...
+[PASS] 3.5 - Crear HU con Acpica 2
+  Saved ID: huId5 = 20
+   True @{id=20; proyectoId=32; epicaId=11; sprintId=; codigo=HU-234859-5; titulo=Generar reporte PDF; rol=; quiero=...
+[EXPECTED FAIL] 3.6 - Rechazar sin proyectoId
+[PASS] 3.7 - Listar todas las HU
+   True {@{id=19; proyectoId=32; epicaId=; sprintId=; codigo=HU-234859-4; titulo=Recuperar contrase¤a; rol=; quiero=...
+[PASS] 3.8 - Obtener HU por ID
+   True @{id=16; proyectoId=32; epicaId=; sprintId=; codigo=HU-234859-1; titulo=Implementar login de usuarios; rol=U...
+[PASS] 3.9 - Obtener backlog del proyecto
+   True @{epicas=System.Object[]; sprints=System.Object[]; backlog=System.Object[]; metricas=}                         
+[PASS] 3.10 - Actualizar tA-tulo
+   True @{id=16; proyectoId=32; epicaId=; sprintId=; codigo=HU-234859-1; titulo=Implementar login con OAuth; rol=Usu...
+[PASS] 3.11 - Cambiar estado a En desarrollo
+   True @{id=16; proyectoId=32; epicaId=; sprintId=; codigo=HU-234859-1; titulo=Implementar login con OAuth; rol=Usu...
+[PASS] 3.12 - Mover HU a sprint
+   True @{id=16; proyectoId=32; epicaId=; sprintId=; codigo=HU-234859-1; titulo=Implementar login con OAuth; rol=Usu...
+[PASS] 3.13 - Asignar HU a usuario
+   True @{id=16; proyectoId=32; epicaId=; sprintId=22; codigo=HU-234859-1; titulo=Implementar login con OAuth; rol=U...
+[FAIL] 3.14 - Vincular requerimiento a HU - Expected 200 got 404
+[FAIL] 3.15 - Vincular segundo requerimiento - Expected 200 got 404
+[UNEXPECTED FAIL] 3.16 - Rechazar vinculaciA3n duplicada - Expected 409 got 404
+
+=== FASE 4: TAREAS ===
+[PASS] 4.1 - Crear tarea SCRUM
+  Saved ID: tareaId = 6
+   True @{id=6; tipo=SCRUM; historiaUsuarioId=16; actividadId=; codigo=TASK-234859-1; nombre=Implementar endpoint lo...
+[PASS] 4.2 - Crear segunda tarea SCRUM
+  Saved ID: tareaId2 = 7
+   True @{id=7; tipo=SCRUM; historiaUsuarioId=16; actividadId=; codigo=TASK-234859-2; nombre=Validar JWT token; desc...
+[PASS] 4.3 - Crear tarea para HU2
+   True @{id=8; tipo=SCRUM; historiaUsuarioId=17; actividadId=; codigo=TASK-234859-3; nombre=UI de registro; descrip...
+[EXPECTED FAIL] 4.4 - Rechazar SCRUM sin historiaUsuarioId
+[PASS] 4.5 - Crear tarea KANBAN
+  Saved ID: tareaKanbanId = 9
+   True @{id=9; tipo=KANBAN; historiaUsuarioId=; actividadId=19; codigo=TASK-KAN-234859-1; nombre=Dise¤ar mockups; d...
+[PASS] 4.6 - Crear segunda tarea KANBAN
+  Saved ID: tareaKanbanId2 = 10
+   True @{id=10; tipo=KANBAN; historiaUsuarioId=; actividadId=19; codigo=TASK-KAN-234859-2; nombre=Desarrollar compo...
+[EXPECTED FAIL] 4.7 - Rechazar KANBAN sin actividadId
+[PASS] 4.8 - Listar todas las tareas
+   True {@{id=8; tipo=SCRUM; historiaUsuarioId=17; actividadId=; codigo=TASK-234859-3; nombre=UI de registro; descri...
+[PASS] 4.9 - Obtener tarea por ID
+   True @{id=6; tipo=SCRUM; historiaUsuarioId=16; actividadId=; codigo=TASK-234859-1; nombre=Implementar endpoint lo...
+[PASS] 4.10 - Actualizar descripciA3n
+   True @{id=6; tipo=SCRUM; historiaUsuarioId=16; actividadId=; codigo=TASK-234859-1; nombre=Implementar endpoint lo...
+[PASS] 4.11 - Cambiar estado a En progreso
+   True @{id=6; tipo=SCRUM; historiaUsuarioId=16; actividadId=; codigo=TASK-234859-1; nombre=Implementar endpoint lo...
+[FAIL] 4.12 - Cambiar estado a Finalizado - Expected 200 got 400
+[FAIL] 4.13 - Crear subtarea - Expected 200 got 400
+[FAIL] 4.14 - Crear segunda subtarea - Expected 200 got 400
+[FAIL] 4.15 - Listar subtareas de tarea - Expected 200 got 400
+[FAIL] 4.16 - Actualizar subtarea - Expected 200 got 404
+
+=== FASE 5: TABLEROS ===
+[PASS] 5.1 - Obtener tablero Scrum de sprint
+   True @{sprint=; columnas=System.Object[]; estadisticas=}                                                            
+[PASS] 5.2 - Tablero con sprint vacA-o
+   True @{sprint=; columnas=System.Object[]; estadisticas=}                                                            
+[PASS] 5.3 - Obtener tablero Kanban de actividad
+   True @{actividad=; columnas=System.Object[]; estadisticas=}                                                         
+[PASS] 5.4 - Tablero con actividad vacA-a
+   True @{actividad=; columnas=System.Object[]; estadisticas=}                                                         
+
+=======================================
+RESUMEN - MODULO AGILE
+=======================================
+
+Estadisticas:
+  Total:              66
+  Pasadas:            51
+  Fallidas:           7
+  Fallos esperados:   7
+  Fallos inesperados: 1
+  Duracion:           1.91 segundos
+
+  Tasa de exito: 77.27%
+
+IDs Guardados:
+  requerimientoId2 = 15
+  huRequerimientoId = 
+  tareaId = 6
+  criterioId2 = 
+  actividadId = 19
+  subtareaId2 = 
+  subtareaId3 = 
+  actividadId2 = 20
+  proyectoId2 = 33
+  sprintId2 = 22
+  huId2 = 17
+  epicaId2 = 11
+  tareaKanbanId = 9
+  sprintId = 21
+  dailyActividadId = 
+  participanteId = 
+  tareaId2 = 7
+  huId4 = 19
+  comentarioTareaId = 
+  tareaKanbanId2 = 10
+  dailyId2 = 
+  dailyId = 
+  criterioId = 
+  participanteId2 = 
+  aeId = 16
+  dependenciaId = 
+  comentarioHuId = 
+  epicaId3 = 12
+  huId5 = 20
+  comentarioSubtareaId = 
+  subtareaId = 
+  requerimientoId = 14
+  sprintId3 = 23
+  proyectoId = 32
+  huId3 = 18
+  epicaId = 10
+  huId = 16
+  huRequerimientoId2 = 
+
+Resultados guardados en: test-agile-results.json
+
+=======================================
+PRUEBAS COMPLETADAS
+=======================================
+
+
+

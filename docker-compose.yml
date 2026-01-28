@@ -1,0 +1,159 @@
+# =============================================================================
+# SGIP-Backend-Deploy - Docker Compose
+# Development environment with PostgreSQL, Redis, MinIO, and NestJS App
+# =============================================================================
+# Usage:
+#   docker-compose up -d              # Start all services
+#   docker-compose up -d --build      # Rebuild and start
+#   docker-compose down               # Stop all services
+#   docker-compose logs -f api        # View app logs
+# =============================================================================
+
+name: sgip-backend-deploy
+
+services:
+  # ===========================================================================
+  # PostgreSQL 14
+  # ===========================================================================
+  postgres:
+    image: postgres:14-alpine
+    container_name: sgip-backend-deploy-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: 1234
+      POSTGRES_DB: sigp_inei
+    ports:
+      - '5433:5432'
+    volumes:
+      - sgip_postgres_data:/var/lib/postgresql/data
+      - ./database/scripts:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U postgres']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - sgip-backend-network
+
+  # ===========================================================================
+  # Redis 7
+  # ===========================================================================
+  redis:
+    image: redis:7-alpine
+    container_name: sgip-backend-deploy-redis
+    restart: unless-stopped
+    ports:
+      - '6380:6379'
+    volumes:
+      - sgip_redis_data:/data
+    command: redis-server --appendonly yes
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - sgip-backend-network
+
+  # ===========================================================================
+  # MinIO (S3-compatible storage)
+  # ===========================================================================
+  minio:
+    image: minio/minio:latest
+    container_name: sgip-backend-deploy-minio
+    restart: unless-stopped
+    environment:
+      MINIO_ROOT_USER: minioadmin
+      MINIO_ROOT_PASSWORD: minioadmin
+    ports:
+      - '9000:9000'
+      - '9001:9001'
+    volumes:
+      - sgip_minio_data:/data
+    command: server /data --console-address ":9001"
+    healthcheck:
+      test: ['CMD', 'curl', '-f', 'http://localhost:9000/minio/health/live']
+      interval: 30s
+      timeout: 20s
+      retries: 3
+    networks:
+      - sgip-backend-network
+
+  # ===========================================================================
+  # NestJS Application (API)
+  # ===========================================================================
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: development
+    container_name: sgip-backend-deploy-api
+    restart: unless-stopped
+    ports:
+      - '3011:3010'
+    environment:
+      # Application
+      NODE_ENV: development
+      PORT: 3010
+      API_PREFIX: api/v1
+      # Database
+      DATABASE_HOST: postgres
+      DATABASE_PORT: 5432
+      DATABASE_USERNAME: postgres
+      DATABASE_PASSWORD: 1234
+      DATABASE_NAME: sigp_inei
+      DATABASE_SYNCHRONIZE: 'false'
+      DATABASE_LOGGING: 'true'
+      DATABASE_SSL: 'false'
+      # Redis
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      REDIS_PASSWORD: ''
+      REDIS_DB: 0
+      REDIS_KEY_PREFIX: 'sigp:'
+      # MinIO
+      MINIO_ENDPOINT: minio
+      MINIO_PUBLIC_ENDPOINT: localhost
+      MINIO_PORT: 9000
+      MINIO_ACCESS_KEY: minioadmin
+      MINIO_SECRET_KEY: minioadmin
+      MINIO_USE_SSL: 'false'
+      MINIO_BUCKET_NAME: sigp-files
+      # JWT
+      JWT_SECRET: dev-secret-change-in-production-min-32-chars
+      JWT_EXPIRATION: 24h
+      JWT_REFRESH_SECRET: dev-refresh-secret-change-in-production
+      JWT_REFRESH_EXPIRATION: 7d
+      # CORS
+      CORS_ORIGIN: '*'
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+    volumes:
+      - ./src:/app/src
+      # - ./node_modules:/app/node_modules  # Comentado para evitar conflictos
+    networks:
+      - sgip-backend-network
+
+# =============================================================================
+# Volumes
+# =============================================================================
+volumes:
+  sgip_postgres_data:
+    driver: local
+  sgip_redis_data:
+    driver: local
+  sgip_minio_data:
+    driver: local
+
+# =============================================================================
+# Networks
+# =============================================================================
+networks:
+  sgip-backend-network:
+    driver: bridge

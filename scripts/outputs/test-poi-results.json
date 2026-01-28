@@ -1,0 +1,36 @@
+﻿{
+    "Summary":  {
+                    "Total":  70,
+                    "SuccessRate":  "84.29%",
+                    "EndTime":  {
+                                    "value":  "\/Date(1765766160251)\/",
+                                    "DisplayHint":  2,
+                                    "DateTime":  "Sunday, December 14, 2025 9:36:00 PM"
+                                },
+                    "Passed":  59,
+                    "ExpectedFail":  11,
+                    "UnexpectedFail":  0,
+                    "StartTime":  {
+                                      "value":  "\/Date(1765766158412)\/",
+                                      "DisplayHint":  2,
+                                      "DateTime":  "Sunday, December 14, 2025 9:35:58 PM"
+                                  },
+                    "Failed":  0,
+                    "Duration":  "1.84s"
+                },
+    "IDs":  {
+                "requerimientoId":  3,
+                "aeId":  10,
+                "proyectoId":  20,
+                "tareaId":  4,
+                "subproyectoId2":  8,
+                "proyectoId2":  21,
+                "actividadId":  7,
+                "documentoId":  4,
+                "tareaId2":  5,
+                "subproyectoId":  7,
+                "actividadId2":  8,
+                "actaReunionId":  3,
+                "cronogramaId":  2
+            }
+}

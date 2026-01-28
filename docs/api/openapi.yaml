@@ -1,0 +1,1765 @@
+openapi: 3.0.0
+info:
+  title: SIGP (Sistema Integral de Gestión de Proyectos) API
+  version: 1.0.0
+  description: |
+    API REST completa para el Sistema Integral de Gestión de Proyectos (SIGP).
+
+    El sistema gestiona:
+    - Autenticación y autorización basada en roles
+    - Planificación estratégica (PGD, OEI, OGD, OEGD, Acciones Estratégicas)
+    - Proyectos y subproyectos (POI)
+    - Gestión ágil (Épicas, Sprints, Historias de Usuario, Tareas)
+    - Recursos humanos (Personal, Divisiones, Habilidades)
+    - Notificaciones en tiempo real
+    - Gestión de archivos con MinIO
+    - Dashboards y métricas
+
+  contact:
+    name: API Support
+    email: api@inei.gob.pe
+
+  license:
+    name: Apache 2.0
+    url: https://www.apache.org/licenses/LICENSE-2.0.html
+
+servers:
+  - url: http://localhost:3010/api/v1
+    description: Development server
+  - url: https://api.sigp.inei.gob.pe/api/v1
+    description: Production server
+
+tags:
+  - name: Authentication
+    description: Endpoints de autenticación y gestión de sesiones
+  - name: Planning
+    description: Jerarquía de planificación estratégica (PGD, OEI, OGD, OEGD)
+  - name: Projects
+    description: Gestión de proyectos y subproyectos
+  - name: Agile
+    description: Gestión ágil (Épicas, Sprints, Historias de Usuario, Tareas)
+  - name: HR
+    description: Recursos humanos (Personal, Habilidades, Divisiones)
+  - name: Storage
+    description: Gestión de archivos y uploads
+  - name: Notifications
+    description: Sistema de notificaciones
+  - name: Dashboard
+    description: Dashboards y métricas
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: JWT token obtenido en el login
+
+  schemas:
+    # ==================== AUTH SCHEMAS ====================
+    LoginDto:
+      type: object
+      required:
+        - password
+      properties:
+        email:
+          type: string
+          format: email
+          example: usuario@inei.gob.pe
+          description: Email del usuario (requerido si no se proporciona username)
+        username:
+          type: string
+          minLength: 3
+          maxLength: 100
+          pattern: '^[a-zA-Z0-9_-]+$'
+          example: jperez
+          description: Nombre de usuario (requerido si no se proporciona email)
+        password:
+          type: string
+          minLength: 6
+          example: password123
+          description: Contraseña del usuario
+      oneOf:
+        - required: [email, password]
+        - required: [username, password]
+
+    RegisterDto:
+      type: object
+      required:
+        - email
+        - username
+        - password
+        - nombre
+        - apellido
+        - rol
+      properties:
+        email:
+          type: string
+          format: email
+          example: usuario@inei.gob.pe
+          description: Email del usuario
+        username:
+          type: string
+          minLength: 3
+          maxLength: 100
+          pattern: '^[a-zA-Z0-9_-]+$'
+          example: jperez
+          description: Nombre de usuario único (solo letras, números, guiones y guiones bajos)
+        password:
+          type: string
+          minLength: 6
+          example: password123
+          description: Contraseña del usuario
+        nombre:
+          type: string
+          example: Juan
+          description: Nombre del usuario
+        apellido:
+          type: string
+          example: Perez
+          description: Apellido del usuario
+        rol:
+          type: string
+          enum:
+            - ADMIN
+            - PMO
+            - COORDINADOR
+            - SCRUM_MASTER
+            - PATROCINADOR
+            - DESARROLLADOR
+            - IMPLEMENTADOR
+          example: DESARROLLADOR
+          description: Rol del usuario en el sistema
+        telefono:
+          type: string
+          nullable: true
+          description: Teléfono de contacto (opcional)
+
+    UserResponseDto:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 1
+        email:
+          type: string
+          example: usuario@inei.gob.pe
+        username:
+          type: string
+          example: jperez
+          description: Nombre de usuario único
+        nombre:
+          type: string
+          example: Juan
+        apellido:
+          type: string
+          example: Perez
+        rol:
+          type: string
+          enum:
+            - ADMIN
+            - PMO
+            - COORDINADOR
+            - SCRUM_MASTER
+            - PATROCINADOR
+            - DESARROLLADOR
+            - IMPLEMENTADOR
+        avatarUrl:
+          type: string
+          nullable: true
+
+    AuthResponseDto:
+      type: object
+      properties:
+        accessToken:
+          type: string
+          example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+        refreshToken:
+          type: string
+          example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+        expiresIn:
+          type: integer
+          description: Segundos hasta que expira el token de acceso
+          example: 3600
+        user:
+          $ref: '#/components/schemas/UserResponseDto'
+
+    RefreshTokenDto:
+      type: object
+      required:
+        - refreshToken
+      properties:
+        refreshToken:
+          type: string
+
+    ChangePasswordDto:
+      type: object
+      required:
+        - currentPassword
+        - newPassword
+      properties:
+        currentPassword:
+          type: string
+        newPassword:
+          type: string
+          minLength: 6
+
+    # ==================== PROJECT SCHEMAS ====================
+    CreateProyectoDto:
+      type: object
+      required:
+        - codigo
+        - nombre
+      properties:
+        codigo:
+          type: string
+          maxLength: 20
+          example: PRY001
+        nombre:
+          type: string
+          maxLength: 200
+          example: Sistema de Gestión Integral
+        descripcion:
+          type: string
+          nullable: true
+        clasificacion:
+          type: string
+          enum:
+            - Al ciudadano
+            - Gestion interna
+          nullable: true
+        accionEstrategicaId:
+          type: integer
+          nullable: true
+        coordinadorId:
+          type: integer
+          nullable: true
+        scrumMasterId:
+          type: integer
+          nullable: true
+        patrocinadorId:
+          type: integer
+          nullable: true
+        coordinacion:
+          type: string
+          maxLength: 100
+          nullable: true
+        areasFinancieras:
+          type: array
+          items:
+            type: string
+          nullable: true
+        montoAnual:
+          type: number
+          nullable: true
+        anios:
+          type: array
+          items:
+            type: integer
+          nullable: true
+        fechaInicio:
+          type: string
+          format: date-time
+          nullable: true
+        fechaFin:
+          type: string
+          format: date-time
+          nullable: true
+
+    ProyectoResponseDto:
+      type: object
+      properties:
+        id:
+          type: integer
+        codigo:
+          type: string
+        nombre:
+          type: string
+        descripcion:
+          type: string
+        estado:
+          type: string
+          enum:
+            - Pendiente
+            - En planificacion
+            - En desarrollo
+            - Finalizado
+            - Cancelado
+        clasificacion:
+          type: string
+        accionEstrategicaId:
+          type: integer
+        coordinadorId:
+          type: integer
+        scrumMasterId:
+          type: integer
+        patrocinadorId:
+          type: integer
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    # ==================== SPRINT SCHEMAS ====================
+    CreateSprintDto:
+      type: object
+      required:
+        - proyectoId
+        - nombre
+        - fechaInicio
+        - fechaFin
+      properties:
+        proyectoId:
+          type: integer
+          example: 1
+        nombre:
+          type: string
+          maxLength: 100
+          example: Sprint 1
+        sprintGoal:
+          type: string
+          nullable: true
+          example: Completar módulo de autenticación
+        fechaInicio:
+          type: string
+          format: date-time
+          example: "2024-01-15T00:00:00Z"
+        fechaFin:
+          type: string
+          format: date-time
+          example: "2024-01-29T00:00:00Z"
+        capacidadEquipo:
+          type: integer
+          minimum: 0
+          nullable: true
+
+    SprintResponseDto:
+      type: object
+      properties:
+        id:
+          type: integer
+        proyectoId:
+          type: integer
+        nombre:
+          type: string
+        estado:
+          type: string
+          enum:
+            - Planificado
+            - Activo
+            - Completado
+        sprintGoal:
+          type: string
+        fechaInicio:
+          type: string
+          format: date-time
+        fechaFin:
+          type: string
+          format: date-time
+        capacidadEquipo:
+          type: integer
+        createdAt:
+          type: string
+          format: date-time
+
+    # ==================== HISTORIA USUARIO SCHEMAS ====================
+    CriterioAceptacionDto:
+      type: object
+      required:
+        - given
+        - when
+        - then
+      properties:
+        given:
+          type: string
+          example: El usuario está en la página de login
+        when:
+          type: string
+          example: Ingresa credenciales válidas
+        then:
+          type: string
+          example: Se loguea exitosamente
+        orden:
+          type: integer
+          nullable: true
+
+    CreateHistoriaUsuarioDto:
+      type: object
+      required:
+        - proyectoId
+        - codigo
+        - titulo
+      properties:
+        proyectoId:
+          type: integer
+          example: 1
+        epicaId:
+          type: integer
+          nullable: true
+        sprintId:
+          type: integer
+          nullable: true
+        codigo:
+          type: string
+          maxLength: 20
+          example: HU001
+        titulo:
+          type: string
+          maxLength: 200
+          example: Como usuario quiero autenticarme en el sistema
+        rol:
+          type: string
+          nullable: true
+          example: usuario
+        quiero:
+          type: string
+          nullable: true
+          example: autenticarme en el sistema
+        para:
+          type: string
+          nullable: true
+          example: acceder a mis datos
+        prioridad:
+          type: string
+          enum:
+            - Must
+            - Should
+            - Could
+            - Wont
+          nullable: true
+        estimacion:
+          type: string
+          enum:
+            - XS
+            - S
+            - M
+            - L
+            - XL
+            - XXL
+          nullable: true
+        storyPoints:
+          type: integer
+          minimum: 1
+          maximum: 100
+          nullable: true
+        asignadoA:
+          type: integer
+          nullable: true
+        ordenBacklog:
+          type: integer
+          nullable: true
+        notas:
+          type: string
+          nullable: true
+        criteriosAceptacion:
+          type: array
+          items:
+            $ref: '#/components/schemas/CriterioAceptacionDto'
+          nullable: true
+
+    HistoriaUsuarioResponseDto:
+      type: object
+      properties:
+        id:
+          type: integer
+        proyectoId:
+          type: integer
+        epicaId:
+          type: integer
+        sprintId:
+          type: integer
+        codigo:
+          type: string
+        titulo:
+          type: string
+        rol:
+          type: string
+        quiero:
+          type: string
+        para:
+          type: string
+        prioridad:
+          type: string
+        estimacion:
+          type: string
+        storyPoints:
+          type: integer
+        estado:
+          type: string
+          enum:
+            - Pendiente
+            - En analisis
+            - Lista
+            - En desarrollo
+            - En pruebas
+            - En revision
+            - Terminada
+        asignadoA:
+          type: integer
+        criteriosAceptacion:
+          type: array
+          items:
+            $ref: '#/components/schemas/CriterioAceptacionDto'
+        createdAt:
+          type: string
+          format: date-time
+
+    # ==================== TAREA SCHEMAS ====================
+    CreateTareaDto:
+      type: object
+      required:
+        - titulo
+      properties:
+        titulo:
+          type: string
+          maxLength: 255
+        descripcion:
+          type: string
+          nullable: true
+        tipo:
+          type: string
+          enum:
+            - SCRUM
+            - KANBAN
+          example: SCRUM
+        historiaUsuarioId:
+          type: integer
+          nullable: true
+        actividadId:
+          type: integer
+          nullable: true
+        prioridad:
+          type: string
+          enum:
+            - Alta
+            - Media
+            - Baja
+          nullable: true
+        asignadoA:
+          type: integer
+          nullable: true
+        estimacionHoras:
+          type: number
+          nullable: true
+
+    TareaResponseDto:
+      type: object
+      properties:
+        id:
+          type: integer
+        titulo:
+          type: string
+        descripcion:
+          type: string
+        tipo:
+          type: string
+        estado:
+          type: string
+          enum:
+            - Por hacer
+            - En progreso
+            - En revision
+            - Finalizado
+        prioridad:
+          type: string
+        historiaUsuarioId:
+          type: integer
+        asignadoA:
+          type: integer
+        createdAt:
+          type: string
+          format: date-time
+
+    # ==================== STORAGE SCHEMAS ====================
+    RequestUploadUrlDto:
+      type: object
+      required:
+        - entidadTipo
+        - entidadId
+        - categoria
+        - nombreArchivo
+        - mimeType
+        - tamano
+      properties:
+        entidadTipo:
+          type: string
+          enum:
+            - PROYECTO
+            - SUBPROYECTO
+            - ACTIVIDAD
+            - ACTA_CONSTITUCION
+            - ACTA_REUNION
+            - DOCUMENTO
+            - REQUERIMIENTO
+            - CRONOGRAMA
+            - INFORME_SPRINT
+            - INFORME_ACTIVIDAD
+            - HISTORIA_USUARIO
+            - TAREA
+            - SUBTAREA
+            - DAILY_MEETING
+            - USUARIO
+          example: PROYECTO
+        entidadId:
+          type: integer
+          minimum: 1
+          example: 1
+        categoria:
+          type: string
+          enum:
+            - documento
+            - evidencia
+            - acta
+            - informe
+            - cronograma
+            - avatar
+            - adjunto
+            - backup
+          example: documento
+        nombreArchivo:
+          type: string
+          maxLength: 255
+          example: arquitectura_sistema.pdf
+        mimeType:
+          type: string
+          maxLength: 100
+          example: application/pdf
+        tamano:
+          type: integer
+          minimum: 1
+          maximum: 52428800
+          description: Tamaño en bytes (máximo 50MB)
+          example: 2048576
+        metadata:
+          type: object
+          nullable: true
+          example:
+            fase: Diseño
+            version: "1.0"
+        esObligatorio:
+          type: boolean
+          default: false
+
+    UploadUrlResponseDto:
+      type: object
+      properties:
+        uploadUrl:
+          type: string
+          description: URL presignada para subir el archivo
+          example: https://minio.inei.gob.pe/sigp/proyecto_1/arquitectura.pdf?X-Amz-Algorithm=...
+        archivoId:
+          type: string
+          format: uuid
+          description: ID del archivo creado
+        objectKey:
+          type: string
+          description: Clave del objeto en MinIO
+        bucket:
+          type: string
+          description: Bucket de destino
+        expiresIn:
+          type: integer
+          description: Segundos hasta que expire la URL (usualmente 3600)
+        requiredHeaders:
+          type: object
+          description: Headers requeridos para el PUT
+          properties:
+            Content-Type:
+              type: string
+
+    ConfirmUploadDto:
+      type: object
+      required:
+        - archivoId
+      properties:
+        archivoId:
+          type: string
+          format: uuid
+          example: a1b2c3d4-e5f6-7890-abcd-ef1234567890
+        checksumMd5:
+          type: string
+          maxLength: 32
+          nullable: true
+          description: MD5 checksum calculado por el cliente
+
+    ArchivoResponseDto:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        nombreOriginal:
+          type: string
+        nombreAlmacenado:
+          type: string
+        mimeType:
+          type: string
+        tamanoBytes:
+          type: integer
+        tamanoLegible:
+          type: string
+          example: 2.0 MB
+        categoria:
+          type: string
+        estado:
+          type: string
+        entidadTipo:
+          type: string
+        entidadId:
+          type: integer
+        version:
+          type: integer
+        createdAt:
+          type: string
+          format: date-time
+        createdBy:
+          type: integer
+
+    # ==================== NOTIFICATION SCHEMAS ====================
+    NotificacionResponseDto:
+      type: object
+      properties:
+        id:
+          type: integer
+        usuarioId:
+          type: integer
+        titulo:
+          type: string
+        mensaje:
+          type: string
+        tipo:
+          type: string
+          enum:
+            - Proyectos
+            - Sprints
+            - Retrasos
+            - Aprobaciones
+            - Tareas
+            - Documentos
+            - Sistema
+        entidadTipo:
+          type: string
+        entidadId:
+          type: integer
+        leida:
+          type: boolean
+        createdAt:
+          type: string
+          format: date-time
+
+    # ==================== DASHBOARD SCHEMAS ====================
+    DashboardGeneralResponseDto:
+      type: object
+      properties:
+        totalProyectos:
+          type: integer
+        proyectosActivos:
+          type: integer
+        proyectosFinalizados:
+          type: integer
+        totalSprints:
+          type: integer
+        sprintsActivos:
+          type: integer
+        totalHistoriasUsuario:
+          type: integer
+        historiasTerminadas:
+          type: integer
+        progresoPorcentaje:
+          type: number
+        proximasActividades:
+          type: array
+          items:
+            type: object
+        proximosSprints:
+          type: array
+          items:
+            type: object
+
+    Error:
+      type: object
+      properties:
+        statusCode:
+          type: integer
+        message:
+          type: string
+        error:
+          type: string
+
+security:
+  - bearerAuth: []
+
+paths:
+  # ==================== AUTH ENDPOINTS ====================
+  /auth/register:
+    post:
+      tags:
+        - Authentication
+      summary: Registrar nuevo usuario
+      operationId: register
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RegisterDto'
+      responses:
+        201:
+          description: Usuario registrado exitosamente
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponseDto'
+        409:
+          description: Email ya registrado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /auth/login:
+    post:
+      tags:
+        - Authentication
+      summary: Login con email y password
+      operationId: login
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginDto'
+      responses:
+        200:
+          description: Login exitoso
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponseDto'
+        401:
+          description: Credenciales inválidas
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /auth/refresh:
+    post:
+      tags:
+        - Authentication
+      summary: Refrescar token de acceso
+      operationId: refreshToken
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RefreshTokenDto'
+      responses:
+        200:
+          description: Token refrescado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponseDto'
+        401:
+          description: Token de refresco inválido
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /auth/profile:
+    get:
+      tags:
+        - Authentication
+      summary: Obtener perfil del usuario actual
+      operationId: getProfile
+      security:
+        - bearerAuth: []
+      responses:
+        200:
+          description: Perfil obtenido
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserResponseDto'
+        401:
+          description: No autenticado
+
+  /auth/change-password:
+    put:
+      tags:
+        - Authentication
+      summary: Cambiar contraseña del usuario
+      operationId: changePassword
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ChangePasswordDto'
+      responses:
+        200:
+          description: Contraseña cambiada exitosamente
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+        400:
+          description: Contraseña actual incorrecta
+
+  /auth/logout:
+    post:
+      tags:
+        - Authentication
+      summary: Cerrar sesión del usuario
+      operationId: logout
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                token:
+                  type: string
+      responses:
+        200:
+          description: Sesión cerrada
+
+  # ==================== PROYECTO ENDPOINTS ====================
+  /proyectos:
+    get:
+      tags:
+        - Projects
+      summary: Listar todos los proyectos
+      operationId: listProyectos
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: estado
+          in: query
+          schema:
+            type: string
+            enum:
+              - Pendiente
+              - En planificacion
+              - En desarrollo
+              - Finalizado
+              - Cancelado
+        - name: coordinadorId
+          in: query
+          schema:
+            type: integer
+        - name: scrumMasterId
+          in: query
+          schema:
+            type: integer
+        - name: accionEstrategicaId
+          in: query
+          schema:
+            type: integer
+        - name: activo
+          in: query
+          schema:
+            type: string
+            enum:
+              - "true"
+              - "false"
+      responses:
+        200:
+          description: Lista de proyectos
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ProyectoResponseDto'
+
+    post:
+      tags:
+        - Projects
+      summary: Crear nuevo proyecto
+      operationId: createProyecto
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateProyectoDto'
+      responses:
+        201:
+          description: Proyecto creado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProyectoResponseDto'
+        403:
+          description: Roles insuficientes
+
+  /proyectos/{id}:
+    get:
+      tags:
+        - Projects
+      summary: Obtener detalles de un proyecto
+      operationId: getProyecto
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        200:
+          description: Detalles del proyecto
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProyectoResponseDto'
+        404:
+          description: Proyecto no encontrado
+
+    patch:
+      tags:
+        - Projects
+      summary: Actualizar proyecto
+      operationId: updateProyecto
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateProyectoDto'
+      responses:
+        200:
+          description: Proyecto actualizado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProyectoResponseDto'
+
+    delete:
+      tags:
+        - Projects
+      summary: Eliminar proyecto
+      operationId: deleteProyecto
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        200:
+          description: Proyecto eliminado
+
+  # ==================== SPRINT ENDPOINTS ====================
+  /sprints:
+    get:
+      tags:
+        - Agile
+      summary: Listar todos los sprints
+      operationId: listSprints
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: proyectoId
+          in: query
+          schema:
+            type: integer
+        - name: estado
+          in: query
+          schema:
+            type: string
+            enum:
+              - Planificado
+              - Activo
+              - Completado
+        - name: activo
+          in: query
+          schema:
+            type: string
+            enum:
+              - "true"
+              - "false"
+      responses:
+        200:
+          description: Lista de sprints
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/SprintResponseDto'
+
+    post:
+      tags:
+        - Agile
+      summary: Crear nuevo sprint
+      operationId: createSprint
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateSprintDto'
+      responses:
+        201:
+          description: Sprint creado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SprintResponseDto'
+
+  /sprints/{id}:
+    get:
+      tags:
+        - Agile
+      summary: Obtener detalles de un sprint
+      operationId: getSprint
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        200:
+          description: Detalles del sprint
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SprintResponseDto'
+
+    patch:
+      tags:
+        - Agile
+      summary: Actualizar sprint
+      operationId: updateSprint
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateSprintDto'
+      responses:
+        200:
+          description: Sprint actualizado
+
+    delete:
+      tags:
+        - Agile
+      summary: Eliminar sprint
+      operationId: deleteSprint
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        200:
+          description: Sprint eliminado
+
+  /sprints/{id}/iniciar:
+    patch:
+      tags:
+        - Agile
+      summary: Iniciar un sprint
+      operationId: iniciarSprint
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        200:
+          description: Sprint iniciado
+
+  /sprints/{id}/cerrar:
+    patch:
+      tags:
+        - Agile
+      summary: Cerrar un sprint
+      operationId: cerrarSprint
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                razonCierre:
+                  type: string
+      responses:
+        200:
+          description: Sprint cerrado
+
+  /sprints/{id}/burndown:
+    get:
+      tags:
+        - Agile
+      summary: Obtener gráfico burndown del sprint
+      operationId: getBurndownSprint
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        200:
+          description: Datos de burndown
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  dias:
+                    type: array
+                    items:
+                      type: string
+                  storyPointsRestantes:
+                    type: array
+                    items:
+                      type: number
+
+  /sprints/{id}/metricas:
+    get:
+      tags:
+        - Agile
+      summary: Obtener métricas del sprint
+      operationId: getMetricasSprint
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        200:
+          description: Métricas del sprint
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  velocidad:
+                    type: number
+                  storyPointsPlaneados:
+                    type: integer
+                  storyPointsCompletados:
+                    type: integer
+                  tasasCompletitud:
+                    type: number
+
+  # ==================== HISTORIA USUARIO ENDPOINTS ====================
+  /historias-usuario:
+    get:
+      tags:
+        - Agile
+      summary: Listar historias de usuario
+      operationId: listHistoriasUsuario
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: proyectoId
+          in: query
+          schema:
+            type: integer
+        - name: epicaId
+          in: query
+          schema:
+            type: integer
+        - name: sprintId
+          in: query
+          schema:
+            type: integer
+        - name: estado
+          in: query
+          schema:
+            type: string
+        - name: prioridad
+          in: query
+          schema:
+            type: string
+        - name: asignadoA
+          in: query
+          schema:
+            type: integer
+        - name: enBacklog
+          in: query
+          schema:
+            type: string
+            enum:
+              - "true"
+              - "false"
+      responses:
+        200:
+          description: Lista de historias de usuario
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/HistoriaUsuarioResponseDto'
+
+    post:
+      tags:
+        - Agile
+      summary: Crear nueva historia de usuario
+      operationId: createHistoriaUsuario
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateHistoriaUsuarioDto'
+      responses:
+        201:
+          description: Historia de usuario creada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HistoriaUsuarioResponseDto'
+
+  /historias-usuario/{id}:
+    get:
+      tags:
+        - Agile
+      summary: Obtener detalles de una historia de usuario
+      operationId: getHistoriaUsuario
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        200:
+          description: Detalles de la historia de usuario
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HistoriaUsuarioResponseDto'
+
+    patch:
+      tags:
+        - Agile
+      summary: Actualizar historia de usuario
+      operationId: updateHistoriaUsuario
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateHistoriaUsuarioDto'
+      responses:
+        200:
+          description: Historia de usuario actualizada
+
+    delete:
+      tags:
+        - Agile
+      summary: Eliminar historia de usuario
+      operationId: deleteHistoriaUsuario
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        200:
+          description: Historia de usuario eliminada
+
+  /historias-usuario/{id}/estado:
+    patch:
+      tags:
+        - Agile
+      summary: Cambiar estado de una historia de usuario
+      operationId: cambiarEstadoHistoriaUsuario
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - estado
+              properties:
+                estado:
+                  type: string
+                  enum:
+                    - Pendiente
+                    - En analisis
+                    - Lista
+                    - En desarrollo
+                    - En pruebas
+                    - En revision
+                    - Terminada
+      responses:
+        200:
+          description: Estado actualizado
+
+  # ==================== UPLOAD ENDPOINTS ====================
+  /upload/request-url:
+    post:
+      tags:
+        - Storage
+      summary: Solicitar URL presignada para subida de archivo
+      operationId: requestUploadUrl
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RequestUploadUrlDto'
+      responses:
+        201:
+          description: URL presignada generada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UploadUrlResponseDto'
+        400:
+          description: Formato o tamaño no permitido
+
+  /upload/confirm:
+    post:
+      tags:
+        - Storage
+      summary: Confirmar subida completada
+      operationId: confirmUpload
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ConfirmUploadDto'
+      responses:
+        200:
+          description: Subida confirmada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ArchivoResponseDto'
+
+  /upload/direct:
+    post:
+      tags:
+        - Storage
+      summary: Subida directa de archivo
+      operationId: uploadDirect
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required:
+                - file
+                - entidadTipo
+                - entidadId
+                - categoria
+              properties:
+                file:
+                  type: string
+                  format: binary
+                entidadTipo:
+                  type: string
+                  enum:
+                    - PROYECTO
+                    - SUBPROYECTO
+                    - ACTIVIDAD
+                    - USUARIO
+                entidadId:
+                  type: integer
+                categoria:
+                  type: string
+                  enum:
+                    - documento
+                    - evidencia
+                    - acta
+                    - informe
+                    - avatar
+                metadata:
+                  type: object
+      responses:
+        201:
+          description: Archivo subido
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ArchivoResponseDto'
+
+  /upload/{id}/version:
+    post:
+      tags:
+        - Storage
+      summary: Crear nueva versión de un archivo
+      operationId: createFileVersion
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required:
+                - file
+              properties:
+                file:
+                  type: string
+                  format: binary
+                comentario:
+                  type: string
+      responses:
+        201:
+          description: Nueva versión creada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ArchivoResponseDto'
+
+  # ==================== NOTIFICACIÓN ENDPOINTS ====================
+  /notificaciones:
+    get:
+      tags:
+        - Notifications
+      summary: Obtener notificaciones del usuario
+      operationId: getNotifications
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: leida
+          in: query
+          schema:
+            type: string
+            enum:
+              - "true"
+              - "false"
+        - name: tipo
+          in: query
+          schema:
+            type: string
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 20
+      responses:
+        200:
+          description: Notificaciones obtenidas
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/NotificacionResponseDto'
+                  total:
+                    type: integer
+                  page:
+                    type: integer
+
+  /notificaciones/{id}/leer:
+    patch:
+      tags:
+        - Notifications
+      summary: Marcar notificación como leída
+      operationId: markNotificationAsRead
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        200:
+          description: Notificación marcada como leída
+
+  /notificaciones/leer-todas:
+    patch:
+      tags:
+        - Notifications
+      summary: Marcar todas las notificaciones como leídas
+      operationId: markAllNotificationsAsRead
+      security:
+        - bearerAuth: []
+      responses:
+        200:
+          description: Todas las notificaciones marcadas como leídas
+
+  # ==================== DASHBOARD ENDPOINTS ====================
+  /dashboard:
+    get:
+      tags:
+        - Dashboard
+      summary: Dashboard general del sistema
+      operationId: getDashboardGeneral
+      security:
+        - bearerAuth: []
+      responses:
+        200:
+          description: Dashboard general
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DashboardGeneralResponseDto'
+
+  /dashboard/proyecto/{id}:
+    get:
+      tags:
+        - Dashboard
+      summary: Dashboard de un proyecto específico
+      operationId: getDashboardProyecto
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        200:
+          description: Dashboard del proyecto
+          content:
+            application/json:
+              schema:
+                type: object
+
+  /dashboard/proyecto/{id}/burndown:
+    get:
+      tags:
+        - Dashboard
+      summary: Burndown chart del proyecto
+      operationId: getBurndownProyecto
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        200:
+          description: Datos del burndown
+
+  /dashboard/proyecto/{id}/velocidad:
+    get:
+      tags:
+        - Dashboard
+      summary: Velocidad del equipo del proyecto
+      operationId: getVelocidadProyecto
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        200:
+          description: Datos de velocidad

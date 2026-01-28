@@ -1,0 +1,26 @@
+﻿{
+    "Summary":  {
+                    "Passed":  64,
+                    "StartTime":  {
+                                      "value":  "\/Date(1765756207657)\/",
+                                      "DisplayHint":  2,
+                                      "DateTime":  "Sunday, December 14, 2025 6:50:07 PM"
+                                  },
+                    "Failed":  0,
+                    "Total":  71,
+                    "ExpectedFail":  26,
+                    "EndTime":  {
+                                    "value":  "\/Date(1765756212823)\/",
+                                    "DisplayHint":  2,
+                                    "DateTime":  "Sunday, December 14, 2025 6:50:12 PM"
+                                },
+                    "UnexpectedFail":  7
+                },
+    "IDs":  {
+                "pgdId":  17,
+                "pgdIdPmo":  18
+            },
+    "Results":  [
+
+                ]
+}
